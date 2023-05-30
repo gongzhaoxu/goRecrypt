@@ -13,7 +13,7 @@ func main() {
 	// Bob生成密钥对
 	bPriKey, bPubKey, _ := curve.GenerateKeys()
 	//明文
-	m := "Hello, 巩钊旭的毕业设计"
+	m := "Hello, 代理重加密"
 	fmt.Println("origin message:", m)
 	//-------------------------------加密---------------------------------
 	// Alice加密，返回cipherText即m_enc 、capsule

@@ -34,7 +34,7 @@
 ## Install
 
 ```sh
-$ go get -v github.com/SherLzp/goRecrypt
+$ go get -v github.com/gongzhaoxu/goRecrypt
 ```
 
 ## Test
@@ -51,79 +51,57 @@ import (
 )
 
 func main() {
-	// Alice Generate Alice key-pair
+	//-------------------------------预准备-------------------------------
+	// Alice生成密钥对
 	aPriKey, aPubKey, _ := curve.GenerateKeys()
-	// Bob Generate Bob key-pair
+	// Bob生成密钥对
 	bPriKey, bPubKey, _ := curve.GenerateKeys()
-	// plain text
-	m := "Hello, Proxy Re-Encryption"
+	//明文
+	m := "Hello, 代理重加密"
 	fmt.Println("origin message:", m)
-	// Alice encrypts to get cipherText and capsule
+	//-------------------------------加密---------------------------------
+	// Alice加密，返回cipherText即m_enc 、capsule
 	cipherText, capsule, err := recrypt.Encrypt(m, aPubKey)
 	if err != nil {
 		fmt.Println(err)
 	}
-	capsuleAsBytes, err := recrypt.EncodeCapsule(*capsule)
-	if err != nil {
-		fmt.Println("encode error:", err)
-	}
-	capsuleTest, err := recrypt.DecodeCapsule(capsuleAsBytes)
-	if err != nil {
-		fmt.Println("decode error:", err)
-	}
-	fmt.Println("capsule before encode:", capsule)
-	fmt.Println("capsule after decode:", capsuleTest)
+
 	fmt.Println("ciphereText:", cipherText)
-	// Alice generates re-encryption key
+	fmt.Println("capsule:", capsule)
+
+	//-------------------------------重加密秘钥生成---------------------------------
+	// Alice生成重加密秘钥rk
 	rk, pubX, err := recrypt.ReKeyGen(aPriKey, bPubKey)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("rk:", rk)
-	// Server executes re-encrypt
+
+	//-------------------------------代理执行重加密---------------------------------
 	newCapsule, err := recrypt.ReEncryption(rk, capsule)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// Bob decrypts the cipherText
+	//-------------------------------解密---------------------------------
+	// Bob解密原始明文
 	plainText, err := recrypt.Decrypt(bPriKey, newCapsule, pubX, cipherText)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	plainTextByMyPri, err := recrypt.DecryptOnMyPriKey(aPriKey, capsule, cipherText)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("PlainText by my own private key:", string(plainTextByMyPri))
-	// get plainText
+	// 输出 plainText
 	fmt.Println("plainText:", string(plainText))
 
-	fileCapsule, err := recrypt.EncryptFile("a.txt", "a_encrypt.txt", aPubKey)
-	if err != nil {
-		fmt.Println("File Encrypt Error:", err)
-	}
-	fileNewCapsule, err := recrypt.ReEncryption(rk, fileCapsule)
-	if err != nil {
-		fmt.Println("ReEncryption Error:", err)
-	}
-	err = recrypt.DecryptFile("a_encrypt.txt", "a_decrypt.txt", bPriKey, fileNewCapsule, pubX)
-	if err != nil {
-		fmt.Println("Decrypt Error:", err)
-	}
 }
 ```
 
 ### Result
 
 ```go
-origin message: Hello, Proxy Re-Encryption
-capsule before encode: &{0xc00006af60 0xc00006af90 57148977540300415262115486025741185922481513775009103033079547516801934630957}
-capsule after decode: {0xc0000ea0c0 0xc0000ea440 57148977540300415262115486025741185922481513775009103033079547516801934630957}
-ciphereText: [86 253 12 148 28 55 88 28 29 24 102 154 207 74 186 228 38 187 250 136 195 231 55 137 34 143 29 145 161 117 217 125 227 233 43 63 182 218 66 181 217 102]
-rk: 102993116644991623703962027935370616042568913513173132988315879311078971457909
-PlainText by my own private key: Hello, Proxy Re-Encryption
-plainText: Hello, Proxy Re-Encryption
+origin message: Hello, 代理重加密
+对称密钥字节流: 06d91555577102d023e177c6ab07772aea6789b4058015d51f9970cb505f6711
+ciphereText: [232 40 96 212 59 204 36 221 123 199 61 43 146 241 163 240 252 181 154 109 125 198 220 198 7 237 122 239 106 215 189 143 20 110 131 161 236 106]
+capsule: &{0xc000075350 0xc000075380 71406603960690457799409919793001160234678313476065294771468672403123794630622}
+rk: 10833369513618945448249494246804646031917851383795605106047959096088651612577
+plainText: Hello, 代理重加密
 ```
-
-Thanks! 
